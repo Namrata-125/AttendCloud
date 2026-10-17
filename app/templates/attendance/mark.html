@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Mark Daily Attendance{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Header -->
+    <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Daily Attendance Sheet</h1>
+            <p class="text-muted mb-0">Record and update daily classroom attendance. Changes synchronize automatically to the local cloud database.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary fs-6 px-3 py-2">
+                <i class="fa-regular fa-calendar-days me-1"></i> Date: <strong>{{ selected_date }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Date & Department Selector Card -->
+    <div class="col-12">
+        <div class="saas-card p-3">
+            <form method="GET" action="{{ url_for('attendance.mark') }}" class="row g-2 align-items-center">
+                <div class="col-12 col-sm-6 col-md-4">
+                    <label for="date-select" class="form-label small text-muted fw-bold mb-1">SELECT SESSION DATE</label>
+                    <input type="date" id="date-select" name="date" class="form-control" value="{{ selected_date }}" onchange="this.form.submit()">
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                    <label for="dept-select" class="form-label small text-muted fw-bold mb-1">FILTER BY DEPARTMENT</label>
+                    <select id="dept-select" name="department" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept }}" {% if selected_department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-4 d-flex align-items-end pt-3 pt-md-0">
+                    <a href="{{ url_for('attendance.mark') }}" class="btn btn-saas-outline w-100">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Reset to Today
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Form -->
+    <div class="col-12">
+        {% if students %}
+        <form method="POST" action="{{ url_for('attendance.mark', date=selected_date, department=selected_department) }}">
+            <input type="hidden" name="attendance_date" value="{{ selected_date }}">
+
+            <div class="saas-card p-3 p-md-4 mb-4">
+                <!-- Bulk Controls Toolbar -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pb-3 mb-3 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" id="btn-mark-all-present" class="btn btn-sm btn-outline-success">
+                            <i class="fa-solid fa-check-double me-1"></i> Mark All Present
+                        </button>
+                        <button type="button" id="btn-mark-all-absent" class="btn btn-sm btn-outline-danger">
+                            <i class="fa-solid fa-xmark me-1"></i> Mark All Absent
+                        </button>
+                    </div>
+
+                    <!-- Live Tally Indicator -->
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="small">
+                            <span class="text-muted">Total:</span> <strong>{{ total_active }}</strong> &bull;
+                            <span class="text-success">Present: <strong id="live-present-counter">{{ marked_present }}</strong></span> &bull;
+                            <span class="text-danger">Absent: <strong id="live-absent-counter">{{ marked_absent }}</strong></span>
+                            {% if unmarked > 0 %}
+                                &bull; <span class="text-warning">Unmarked: <strong>{{ unmarked }}</strong></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance Table -->
+                <div class="table-responsive">
+                    <table class="saas-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 140px;">Roll Number</th>
+                                <th>Student Name</th>
+                                <th>Department</th>
+                                <th style="width: 200px;">Attendance Status</th>
+                                <th>Remarks (Optional)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in students %}
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="student_ids" value="{{ s.id }}">
+                                    <span class="font-monospace fw-semibold">{{ s.roll_number }}</span>
+                                </td>
+                                <td class="fw-semibold">
+                                    {{ s.full_name }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ s.department }}</span>
+                                </td>
+                                <td>
+                                    <div class="attendance-toggle-group">
+                                        {% set is_present = (s.current_status == 'Present') or (not s.current_status) %}
+                                        <input type="radio" id="present_{{ s.id }}" name="status_{{ s.id }}" value="Present" {% if is_present %}checked{% endif %}>
+                                        <label for="present_{{ s.id }}"><i class="fa-solid fa-check"></i> Present</label>
+
+                                        <input type="radio" id="absent_{{ s.id }}" name="status_{{ s.id }}" value="Absent" {% if s.current_status == 'Absent' %}checked{% endif %}>
+                                        <label for="absent_{{ s.id }}"><i class="fa-solid fa-xmark"></i> Absent</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="text" name="remarks_{{ s.id }}" class="form-control form-control-sm" placeholder="e.g. Late, Medical" value="{{ s.current_remarks or '' }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sticky Bottom Bar / Submit Action -->
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 pt-4 border-top mt-3">
+                    <div class="small text-muted">
+                        <i class="fa-solid fa-shield-halved text-primary me-1"></i> Submitting updates existing records safely without duplicates.
+                    </div>
+                    <button type="submit" class="btn btn-saas-primary btn-lg px-4">
+                        <i class="fa-solid fa-floppy-disk me-2"></i> Save Attendance for {{ selected_date }}
+                    </button>
+                </div>
+            </div>
+        </form>
+        {% else %}
+        <div class="saas-card p-5 text-center">
+            <i class="fa-solid fa-user-xmark fs-1 text-muted opacity-50 mb-3"></i>
+            <h5 class="fw-semibold">No active students available</h5>
+            <p class="text-muted small">Add active students first to mark daily attendance.</p>
+            <a href="{{ url_for('students.add') }}" class="btn btn-saas-primary">
+                <i class="fa-solid fa-plus me-1"></i> Register Student
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

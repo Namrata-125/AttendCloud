@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}SaaS Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- Header with Quick Action Bar -->
+    <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h1 class="h3 fw-bold mb-1">System Overview & Analytics</h1>
+            <p class="text-muted mb-0">
+                <i class="fa-regular fa-calendar me-1"></i> Today: <strong>{{ today_date }}</strong> &bull; LAN SaaS Multi-tenant Attendance Engine
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('attendance.mark') }}" class="btn btn-saas-primary">
+                <i class="fa-solid fa-calendar-check me-1"></i> Mark Today's Attendance
+            </a>
+            <a href="{{ url_for('students.add') }}" class="btn btn-saas-outline">
+                <i class="fa-solid fa-user-plus me-1"></i> Add Student
+            </a>
+            <a href="{{ url_for('reports.index') }}" class="btn btn-saas-outline">
+                <i class="fa-solid fa-file-csv me-1"></i> Reports & Archival
+            </a>
+        </div>
+    </div>
+
+    <!-- Cloud Controller Architecture Banner -->
+    <div class="col-12">
+        <div class="cloud-controller-banner">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="pulsing-dot {% if not cluster_status.is_hdfs_online %}warning{% endif %}"></span>
+                        <span class="fw-bold fs-6 text-uppercase tracking-wider">Custom Cloud Controller: {{ cluster_status.controller_name }}</span>
+                    </div>
+                    <p class="mb-0 text-light text-opacity-75 small">
+                        <strong>Architecture Mode:</strong> {{ cluster_status.controller_mode }} &bull; 
+                        <strong>HDFS Subsystem:</strong> {{ cluster_status.hdfs_status }} &bull; 
+                        {{ cluster_status.details }}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="d-inline-flex flex-column align-items-lg-end">
+                        <span class="badge bg-white bg-opacity-20 text-white px-3 py-2 mb-1">
+                            <i class="fa-solid fa-box-archive me-1"></i> {{ total_archives }} Archived Datasets
+                        </span>
+                        <small class="text-white text-opacity-50">Local Cloud Exports Staging Active</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4 Key Metrics Cards -->
+<div class="row g-3 g-lg-4 mb-4">
+    <!-- Total Active Students -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="metric-label">Enrolled Students</span>
+                <div class="metric-icon indigo">
+                    <i class="fa-solid fa-user-graduate"></i>
+                </div>
+            </div>
+            <div class="metric-value mb-1">{{ total_students }}</div>
+            <div class="small text-muted">
+                <span class="text-success fw-semibold">{{ active_students }} Active</span> &bull; {{ inactive_students }} Inactive
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Attendance Rate -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="metric-label">Today's Attendance</span>
+                <div class="metric-icon sky">
+                    <i class="fa-solid fa-percent"></i>
+                </div>
+            </div>
+            <div class="metric-value mb-1">{{ attendance_rate_today }}%</div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar bg-info" role="progressbar" style="width: {{ attendance_rate_today }}%" aria-valuenow="{{ attendance_rate_today }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="small text-muted mt-2">
+                {{ total_marked_today }} of {{ active_students }} students marked
+            </div>
+        </div>
+    </div>
+
+    <!-- Present Today -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="metric-label">Present Today</span>
+                <div class="metric-icon emerald">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+            <div class="metric-value text-success mb-1">{{ present_today }}</div>
+            <div class="small text-muted">
+                Students attending classes today
+            </div>
+        </div>
+    </div>
+
+    <!-- Absent Today -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="metric-label">Absent Today</span>
+                <div class="metric-icon rose">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+            </div>
+            <div class="metric-value text-danger mb-1">{{ absent_today }}</div>
+            <div class="small text-muted">
+                Recorded absences for {{ today_date }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Details Section: Two Column Grid -->
+<div class="row g-4">
+    <!-- Left: Recent Attendance Feed -->
+    <div class="col-12 col-lg-8">
+        <div class="saas-card p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 fw-bold mb-0">
+                    <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Recent Attendance Activity
+                </h2>
+                <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-link text-decoration-none">
+                    View Complete Report <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+
+            {% if recent_logs %}
+            <div class="table-responsive">
+                <table class="saas-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Roll Number</th>
+                            <th>Department</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                        <tr>
+                            <td class="fw-semibold">{{ log.full_name }}</td>
+                            <td><code>{{ log.roll_number }}</code></td>
+                            <td><span class="badge bg-light text-dark border">{{ log.department }}</span></td>
+                            <td>{{ log.attendance_date }}</td>
+                            <td>
+                                {% if log.status == 'Present' %}
+                                    <span class="status-pill present">
+                                        <i class="fa-solid fa-check"></i> Present
+                                    </span>
+                                {% else %}
+                                    <span class="status-pill absent">
+                                        <i class="fa-solid fa-xmark"></i> Absent
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ log.marked_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fa-solid fa-clipboard-list fs-1 mb-3 text-secondary opacity-50"></i>
+                <p class="mb-2">No attendance has been recorded yet.</p>
+                <a href="{{ url_for('attendance.mark') }}" class="btn btn-sm btn-saas-primary">
+                    Mark Attendance Now
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Architecture & LAN Info Card -->
+    <div class="col-12 col-lg-4">
+        <div class="saas-card p-3 p-md-4 mb-4">
+            <h3 class="h6 fw-bold mb-3">
+                <i class="fa-solid fa-network-wired text-info me-2"></i>LAN Deployment Status
+            </h3>
+            <p class="small text-muted">
+                This SaaS instance is configured with <code>0.0.0.0</code> host binding. All smartphones, tablets, and laptops on the same Wi-Fi router can access this portal simultaneously.
+            </p>
+            <div class="bg-light p-3 rounded-3 border mb-3">
+                <div class="small fw-bold text-muted mb-1">CONNECTIVITY ENDPOINT</div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <code class="fs-6">http://&lt;YOUR_LAN_IP&gt;:5000</code>
+                    <span class="badge bg-success-subtle text-success">Active</span>
+                </div>
+            </div>
+            <ul class="list-unstyled small text-muted mb-0">
+                <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i>Zero client-side installation needed</li>
+                <li class="mb-2"><i class="fa-solid fa-circle-check text-success me-2"></i>Persistent SQLite database</li>
+                <li><i class="fa-solid fa-circle-check text-success me-2"></i>Cross-browser HTML5 / Bootstrap 5 UI</li>
+            </ul>
+        </div>
+
+        <div class="saas-card p-3 p-md-4">
+            <h3 class="h6 fw-bold mb-3">
+                <i class="fa-solid fa-hard-drive text-warning me-2"></i>Hadoop Archival Pipeline
+            </h3>
+            <div class="small text-muted mb-3">
+                Current mode: <strong>Phase 1 (Local Cloud Staging)</strong>. Reports generated can be exported to CSV and saved in the <code>exports/</code> directory, pre-configured for WebHDFS synchronization in Phase 2.
+            </div>
+            <div class="d-grid">
+                <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-saas-outline">
+                    <i class="fa-solid fa-cloud-arrow-up me-1"></i> Manage Cloud Archives
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

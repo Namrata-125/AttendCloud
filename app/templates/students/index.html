@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Directory{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Header & Action -->
+    <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Student Records</h1>
+            <p class="text-muted mb-0">Manage registered students, academic departments, and track individual attendance statistics.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('students.add') }}" class="btn btn-saas-primary">
+                <i class="fa-solid fa-user-plus me-1"></i> Add New Student
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Card -->
+    <div class="col-12">
+        <div class="saas-card p-3">
+            <form method="GET" action="{{ url_for('students.index') }}" class="row g-2 align-items-center">
+                <div class="col-12 col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search by name, roll no, or email..." value="{{ search }}">
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <select name="department" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept }}" {% if selected_department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Inactive" {% if selected_status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-saas-primary flex-grow-1">
+                        <i class="fa-solid fa-filter me-1"></i> Filter
+                    </button>
+                    <a href="{{ url_for('students.index') }}" class="btn btn-saas-outline" title="Reset Filters">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Students Directory Table -->
+    <div class="col-12">
+        <div class="saas-card p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-semibold text-muted small">
+                    Showing <strong>{{ students|length }}</strong> Student Records
+                </div>
+                <div>
+                    <input type="text" id="table-quick-search" class="form-control form-control-sm" placeholder="Instant page search..." style="max-width: 200px;">
+                </div>
+            </div>
+
+            {% if students %}
+            <div class="table-responsive">
+                <table class="saas-table filterable-table">
+                    <thead>
+                        <tr>
+                            <th>Roll Number</th>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Department & Semester</th>
+                            <th>Status</th>
+                            <th>Attendance Record</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-dark-subtle text-dark-emphasis px-2 py-1 font-monospace">
+                                    {{ s.roll_number }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold">
+                                {{ s.full_name }}
+                            </td>
+                            <td class="text-muted small">
+                                {{ s.email }}
+                            </td>
+                            <td>
+                                <div>{{ s.department }}</div>
+                                <small class="text-muted">{{ s.semester }}</small>
+                            </td>
+                            <td>
+                                {% if s.status == 'Active' %}
+                                    <span class="status-pill active"><i class="fa-solid fa-circle-check"></i> Active</span>
+                                {% else %}
+                                    <span class="status-pill inactive"><i class="fa-solid fa-circle-pause"></i> Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set sessions = s.total_sessions or 0 %}
+                                {% set present = s.present_count or 0 %}
+                                {% if sessions > 0 %}
+                                    {% set pct = ((present / sessions) * 100)|round(1) %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; width: 70px;">
+                                            <div class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ pct }}%"></div>
+                                        </div>
+                                        <span class="small fw-semibold">{{ pct }}%</span>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ present }}/{{ sessions }} days present</div>
+                                {% else %}
+                                    <span class="text-muted small">No sessions yet</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a href="{{ url_for('students.edit', student_id=s.id) }}" class="btn btn-sm btn-outline-primary" title="Edit Student">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('students.delete', student_id=s.id) }}" class="confirm-delete-form d-inline" data-student-name="{{ s.full_name }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Student">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-user-slash fs-1 text-muted opacity-50 mb-3"></i>
+                <h5 class="fw-semibold">No students found</h5>
+                <p class="text-muted small">Try modifying search filters or add a new student record.</p>
+                <a href="{{ url_for('students.add') }}" class="btn btn-sm btn-saas-primary">
+                    <i class="fa-solid fa-plus me-1"></i> Add Student
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

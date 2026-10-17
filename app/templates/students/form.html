@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Student - {{ student.full_name }}{% else %}Add New Student{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <a href="{{ url_for('students.index') }}" class="btn btn-sm btn-link text-decoration-none p-0 text-muted">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Student Directory
+                </a>
+                <h1 class="h3 fw-bold mt-1 mb-0">
+                    {% if is_edit %}Edit Student Record{% else %}Register New Student{% endif %}
+                </h1>
+            </div>
+        </div>
+
+        <div class="saas-card p-4">
+            <form method="POST" action="{% if is_edit %}{{ url_for('students.edit', student_id=student_id) }}{% else %}{{ url_for('students.add') }}{% endif %}">
+                <!-- Roll Number -->
+                <div class="mb-3">
+                    <label for="roll_number" class="form-label fw-semibold small text-muted">ROLL NUMBER <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="roll_number" name="roll_number" placeholder="e.g. CS2026-006" value="{{ student.roll_number or '' }}" required autofocus>
+                    <div class="form-text">Unique academic enrollment or registration ID.</div>
+                </div>
+
+                <!-- Full Name -->
+                <div class="mb-3">
+                    <label for="full_name" class="form-label fw-semibold small text-muted">FULL NAME <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="full_name" name="full_name" placeholder="e.g. Priyanshu Sharma" value="{{ student.full_name or '' }}" required>
+                </div>
+
+                <!-- Email Address -->
+                <div class="mb-3">
+                    <label for="email" class="form-label fw-semibold small text-muted">EMAIL ADDRESS <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="e.g. priyanshu@attendcloud.local" value="{{ student.email or '' }}" required>
+                </div>
+
+                <!-- Department & Semester Row -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-sm-6">
+                        <label for="department" class="form-label fw-semibold small text-muted">DEPARTMENT <span class="text-danger">*</span></label>
+                        <select class="form-select" id="department" name="department" required>
+                            <option value="">Choose department...</option>
+                            {% for dept in ['Computer Science', 'Information Technology', 'Cloud Computing', 'Data Science', 'Electronics & Comm.'] %}
+                                <option value="{{ dept }}" {% if student.department == dept %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="semester" class="form-label fw-semibold small text-muted">SEMESTER <span class="text-danger">*</span></label>
+                        <select class="form-select" id="semester" name="semester" required>
+                            <option value="">Choose semester...</option>
+                            {% for sem in ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'] %}
+                                <option value="{{ sem }}" {% if student.semester == sem %}selected{% endif %}>{{ sem }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small text-muted">STATUS</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status" id="statusActive" value="Active" {% if student.status != 'Inactive' %}checked{% endif %}>
+                            <label class="form-check-label" for="statusActive">
+                                <span class="badge bg-success-subtle text-success">Active Student</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="status" id="statusInactive" value="Inactive" {% if student.status == 'Inactive' %}checked{% endif %}>
+                            <label class="form-check-label" for="statusInactive">
+                                <span class="badge bg-secondary-subtle text-secondary">Inactive / Suspended</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                    <a href="{{ url_for('students.index') }}" class="btn btn-saas-outline">Cancel</a>
+                    <button type="submit" class="btn btn-saas-primary">
+                        <i class="fa-solid fa-floppy-disk me-1"></i>
+                        {% if is_edit %}Update Student{% else %}Save Student Record{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
