@@ -360,13 +360,30 @@ These are potential extensions and should not be interpreted as features already
 ---
 ## Screenshots
 
-### AttendCloud Dashboard
-
-The dashboard provides an overview of attendance activity and quick access to student management, attendance marking, reports, and cloud archival features.
+### 1. Dashboard
+The dashboard provides an overview of attendance activity and quick access to the main modules.
 
 ![AttendCloud Dashboard](screenshots/dashboard.png)
 
+### 2. Student Management
+This section displays student records and their academic details.
 
+![Student Management](screenshots/students.png)
+
+### 3. Mark Attendance
+This module allows attendance to be recorded for enrolled students.
+
+![Mark Attendance](screenshots/attendance.png)
+
+### 4. Reports & Cloud Archival
+The reports section provides attendance records, date-based filtering, and cloud archival logs.
+
+![Reports and Archives](screenshots/reports-archives.png)
+
+### 5. HDFS Archive Verification
+This screenshot demonstrates the archived files stored in the HDFS archive directory.
+
+![HDFS Archive Verification](screenshots/hdfs-verification.png)
 ## 📚 References
 
 1. [Flask Documentation](https://flask.palletsprojects.com/)
