@@ -1,63 +1,89 @@
 # AttendCloud: A LAN-Based SaaS Attendance Management System
-### Using HDFS and a Custom Cloud Controller
 
-AttendCloud is a lightweight, high-performance Software-as-a-Service (SaaS) attendance management platform designed for Cloud Computing mini-projects. It operates locally over a Local Area Network (LAN), allowing instructors, students, and lab administrators to access attendance records from any device on the same Wi-Fi network without requiring third-party cloud hosting.
+### Using Apache Hadoop HDFS and a Custom Cloud Controller
 
----
+AttendCloud is a Software-as-a-Service (SaaS) attendance management system designed for a Cloud Computing mini-project. It runs on a local computer and allows authorized users on the same Local Area Network (LAN) to access attendance management features through a web browser.
+
+The application uses Flask for the web interface, SQLite for operational data, and Apache Hadoop HDFS for distributed archival of attendance reports through the WebHDFS REST API.
 
 ## 🌟 Key Features
 
-1. **Executive SaaS Dashboard**:
-   - Live KPI cards: Total enrolled students, today's attendance rate, present count, absent count.
-   - Live Custom Cloud Controller status widget.
-   - Real-time recent attendance feed.
-2. **Student Management (Full CRUD)**:
-   - Register, update, and search students by roll number, name, department, or status.
-   - Automatically tracks historical attendance percentages per student.
-3. **Daily Attendance Register**:
-   - Single-click **"Mark All Present"** and **"Mark All Absent"** bulk controls.
-   - Atomic SQLite upserts ensuring no duplicate attendance entries per day.
-   - Remarks and notes for individual student tracking.
-4. **Attendance Analytics & CSV Reporting**:
-   - Multi-criteria filter: Date range, student, department, and status.
-   - Direct-to-browser CSV spreadsheet export (Excel/Sheets ready with UTF-8 BOM).
-5. **Custom Cloud Controller & HDFS Architecture**:
-   - **Phase 1 (Current)**: Staged local cloud archival in the `exports/` directory with full database audit logging.
-   - **Phase 2 (Hadoop Integration)**: Pre-wired WebHDFS REST API adapter ready for seamless upload to an Apache Hadoop cluster.
-6. **Zero-Configuration LAN Access**:
-   - Bound to `0.0.0.0:5000` with automated local IPv4 autodetection printed in the terminal on startup.
+### 1. SaaS Dashboard
+- Displays total enrolled students, attendance statistics, present count, and absent count.
+- Shows the status of the custom cloud controller.
+- Provides a recent attendance overview.
+
+### 2. Student Management
+- Register, update, and search student records.
+- Search students using details such as roll number, name, and department.
+- Track attendance percentages using recorded attendance data.
+
+### 3. Daily Attendance Management
+- Mark attendance for individual students.
+- Use bulk controls to mark students present or absent.
+- Store attendance remarks and notes.
+- Use SQLite database operations to maintain attendance records.
+
+### 4. Attendance Analytics and CSV Reporting
+- Filter attendance reports using available date, student, department, and status filters.
+- Export attendance data as CSV files.
+- Open exported reports in spreadsheet applications such as Microsoft Excel.
+
+### 5. Custom Cloud Controller and HDFS Integration
+- Stage attendance reports locally in the `exports/` directory.
+- Archive attendance reports to Apache Hadoop HDFS using WebHDFS.
+- Record archival operations and synchronization status in SQLite audit logs.
+- Support local staging when HDFS archival is unavailable.
+
+### 6. LAN Access
+- Run the Flask development server on `0.0.0.0:5000`.
+- Access the application locally or from compatible devices connected to the same network.
+- Display local and LAN access information in the terminal when the application starts.
 
 ---
 
 ## 🏛️ System Architecture
 
 ```text
-       +-------------------------------------------------------------+
-       |                  LAN Clients (Phones / Laptops)             |
-       |                   http://<HOST_LAN_IP>:5000                 |
-       +------------------------------+------------------------------+
-                                      | HTTP Requests
-                                      v
-       +-------------------------------------------------------------+
-       |               AttendCloud Flask Application Server          |
-       |                      (Host: 0.0.0.0, Port: 5000)            |
-       +------------------------------+------------------------------+
-                                      |
-         +----------------------------+----------------------------+
-         |                                                         |
-         v                                                         v
-+------------------+                                    +--------------------+
-| SQLite Database  |                                    | Custom Cloud       |
-| data/attendcloud |                                    | Controller Engine  |
-+------------------+                                    +---------+----------+
-                                                                  |
-                                      +---------------------------+---------------------------+
-                                      |                                                       |
-                                      v                                                       v
-                         [Phase 1: Local Staging]                                [Phase 2: Live Cluster]
-                         exports/attendance_*.csv                                Apache Hadoop HDFS
-                         (Local Cloud Archive)                                   WebHDFS (:9870)
+              LAN Clients (Laptops and Phones)
+                          |
+                          | HTTP Requests
+                          v
+              +--------------------------+
+              | Flask Application Server|
+              |      Port 5000           |
+              +------------+-------------+
+                           |
+                 +---------+----------+
+                 |                    |
+                 v                    v
+        +----------------+   +----------------------+
+        | SQLite Database|   | Custom Cloud         |
+        | Student Records|   | Controller           |
+        | Attendance     |   +----------+-----------+
+        | Archive Logs   |              |
+        +----------------+         +----+-----+
+                                   |          |
+                                   v          v
+                            +------------+ +----------------+
+                            | Local CSV  | | Apache Hadoop |
+                            | Staging    | | HDFS Archive  |
+                            | exports/   | | WebHDFS       |
+                            +------------+ +----------------+
 ```
+
+### Technology Stack
+
+| Component | Technology |
+|---|---|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | Python, Flask |
+| Operational database | SQLite |
+| Distributed archival | Apache Hadoop HDFS |
+| HDFS communication | WebHDFS REST API |
+| Development environment | Windows, VS Code |
+| Hadoop environment | Ubuntu on WSL2 |
+| Network access | Local Area Network |
 
 ---
 
@@ -65,139 +91,284 @@ AttendCloud is a lightweight, high-performance Software-as-a-Service (SaaS) atte
 
 ```text
 AttendCloud/
-├── config.py                 # Configuration settings (paths, network port, HDFS parameters)
-├── run.py                    # Entry point; detects LAN IP & launches server on 0.0.0.0
-├── requirements.txt          # Python dependencies (Flask)
-├── README.md                 # Project documentation and setup guide
+├── config.py
+├── run.py
+├── requirements.txt
+├── README.md
+├── README_backup.md
+├── .gitignore
 │
 ├── app/
-│   ├── __init__.py           # Flask app factory, blueprint registration & DB setup
-│   ├── database.py           # SQLite connection pooling & auto-initialization
-│   ├── schema.sql            # Table definitions (students, attendance, archive_logs)
+│   ├── __init__.py
+│   ├── database.py
+│   ├── schema.sql
 │   │
 │   ├── routes/
 │   │   ├── __init__.py
-│   │   ├── dashboard.py      # Analytics & dashboard route
-│   │   ├── students.py       # Student CRUD operations
-│   │   ├── attendance.py     # Attendance marking and upsert logic
-│   │   └── reports.py        # Date filters, CSV download, and HDFS trigger
+│   │   ├── dashboard.py
+│   │   ├── students.py
+│   │   ├── attendance.py
+│   │   └── reports.py
 │   │
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── export_service.py # Formats and writes CSV reports
-│   │   └── hdfs_service.py   # Cloud Controller & WebHDFS archival adapter
+│   │   ├── export_service.py
+│   │   └── hdfs_service.py
 │   │
 │   ├── static/
-│   │   ├── css/style.css     # Modern SaaS theme, cards, pill switches & animations
-│   │   └── js/main.js        # Bulk attendance controls & live table search
+│   │   ├── css/
+│   │   │   └── style.css
+│   │   └── js/
+│   │       └── main.js
 │   │
 │   └── templates/
-│       ├── base.html         # Master layout with responsive navbar & alerts
-│       ├── dashboard.html    # SaaS overview with statistics cards
+│       ├── base.html
+│       ├── dashboard.html
 │       ├── students/
-│       │   ├── index.html    # Student directory table with search
-│       │   └── form.html     # Add / Edit student form
+│       │   ├── index.html
+│       │   └── form.html
 │       ├── attendance/
-│       │   └── mark.html     # Daily attendance register with pill switches
+│       │   └── mark.html
 │       └── reports/
-│           └── index.html    # Report filtering, CSV export & HDFS audit logs
+│           └── index.html
 │
 ├── data/
-│   ├── .gitkeep
-│   └── attendcloud.db        # SQLite database file (created automatically)
+│   └── .gitkeep
 │
 └── exports/
-    ├── .gitkeep
-    └── *.csv                 # Staged attendance exports & HDFS archives
+    └── .gitkeep
 ```
+
+**Note:** The SQLite database and generated CSV files are created locally at runtime and are excluded from Git using `.gitignore`.
 
 ---
 
-## 🚀 Setup & Execution Guide
+## 🚀 Setup and Execution Guide
 
-### Step 1: Open Terminal in Project Folder
-Ensure you are inside the `AttendCloud` directory:
+### Prerequisites
+
+Install or configure the following:
+
+- Python 3
+- Git
+- Visual Studio Code or another code editor
+- Apache Hadoop 3.5.0 and Java 17 if you want to use the HDFS archival feature
+- Ubuntu on WSL2 for the local Hadoop environment
+
+### Step 1: Open the project directory
+
+Open PowerShell and run:
+
 ```powershell
-cd c:\Users\ndaav\OneDrive\Documents\AttendCloud
+cd "$env:USERPROFILE\OneDrive\Documents\AttendCloud"
 ```
 
-### Step 2: (Optional) Create & Activate Virtual Environment
+### Step 2: Create and activate a virtual environment
+
+If you do not already have a virtual environment, run:
+
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+py -m venv .venv
 ```
 
-### Step 3: Install Dependencies
+Activate it:
+
 ```powershell
-pip install -r requirements.txt
+.\.venv\Scripts\Activate.ps1
 ```
 
-### Step 4: Run the Application
+If PowerShell blocks activation, use the Python executable directly or configure the execution policy appropriately for your environment.
+
+### Step 3: Install dependencies
+
 ```powershell
-python run.py
+py -m pip install -r requirements.txt
 ```
 
----
+### Step 4: Start AttendCloud
 
-## 🌐 Accessing over Local Area Network (LAN)
+```powershell
+py run.py
+```
 
-When `python run.py` executes, it detects your computer's local IP address and displays:
+Keep the terminal open while using the application.
+
+### Step 5: Open the application
+
+On the computer running the Flask server, open:
+
 ```text
-=================================================================
-  AttendCloud: LAN-Based SaaS Attendance Management System
-  Powered by Custom Cloud Controller & SQLite (HDFS Ready)
-=================================================================
-  [+] Local Access URL   : http://localhost:5000
-  [+] LAN Access URL     : http://192.168.1.15:5000
-  [+] Server Binding     : 0.0.0.0:5000
-  [+] Cloud Controller   : AttendCloud-Primary-Controller (Online)
-  [+] HDFS Architecture  : Phase 1 (Local Cloud Staging Active)
-=================================================================
+http://localhost:5000
 ```
 
-### To access from your phone or another laptop:
-1. Connect the mobile phone or secondary laptop to the **same Wi-Fi network**.
-2. Open any web browser (Chrome, Safari, Firefox).
-3. Type the **LAN Access URL** (e.g. `http://192.168.1.15:5000`).
-4. If Windows Firewall prompts for network access on first launch, click **Allow access for Private Networks**.
+The application should be running before you access this URL.
 
 ---
 
-## 🐘 Apache Hadoop HDFS Integration (Phase 2 - Fully Operational)
+## 🌐 Accessing AttendCloud over a LAN
 
-The storage pipeline in `app/services/hdfs_service.py` is fully integrated and tested with Apache Hadoop via WebHDFS:
+To access the application from another device:
 
-1. **Dual Storage Workflow**:
-   - **Local Staging**: Whenever an attendance dataset is archived, it is formatted with Excel-compatible UTF-8 BOM encoding and staged in the local `exports/` directory.
-   - **Live Cloud Archival**: When `HDFS_ENABLED` is `True`, the Cloud Controller connects to the WebHDFS REST API (`:9870`), requests file creation from the NameNode, resolves DataNode redirection endpoints, and streams the dataset directly to HDFS storage (`hdfs://<NAMENODE>:9000/attendcloud/archive/`).
-   - **Audit Trail**: Every archival operation records timestamp, record count, file size, storage destination, and synchronization status in SQLite's `archive_logs` table.
+1. Connect the computer and the other device to the same Wi-Fi network.
+2. Start AttendCloud on the host computer.
+3. Find the LAN IP address displayed by the application or check the host computer's network configuration.
+4. Open a browser on the other device and visit:
 
-2. **Cluster Configuration (`config.py` / Environment Variables)**:
-   ```powershell
-   $env:HDFS_ENABLED="True"
-   $env:HDFS_NAMENODE_HOST="127.0.0.1"
-   $env:HDFS_NAMENODE_PORT="9870"
-   $env:HDFS_USER="ndaav"
-   $env:HDFS_ARCHIVE_DIR="/attendcloud/archive"
-   ```
+```text
+http://<HOST_LAN_IP>:5000
+```
 
-3. **Starting the Hadoop HDFS Cluster (WSL / Linux)**:
-   Ensure the Hadoop DFS daemons are active:
-   ```bash
-   start-dfs.sh
-   # Verify that NameNode, DataNode, and SecondaryNameNode are running:
-   jps
-   ```
+Replace `<HOST_LAN_IP>` with the actual LAN IP address of the host computer.
 
-4. **Troubleshooting & Permissions**:
-   - **HTTP 403 Forbidden (`AccessControlException`)**: Occurs if the HDFS archive directory does not grant write permissions to the configured user. Resolve by granting write access:
-     ```bash
-     hdfs dfs -chmod 777 /attendcloud/archive
-     ```
-   - **DataNode Redirect Host Resolution**: In WSL/virtualized clusters, the NameNode may redirect to an internal domain name (`.localdomain`). The Cloud Controller automatically resolves and routes DataNode transfers to reachable host endpoints (`127.0.0.1` / LAN IP).
+For example, if the host IP is `192.168.1.15`, use:
 
-5. **Verifying HDFS Files**:
-   ```bash
-   hdfs dfs -ls /attendcloud/archive
-   hdfs dfs -cat /attendcloud/archive/<filename>.csv
-   ```
+```text
+http://192.168.1.15:5000
+```
+
+If the page cannot be opened, check the Windows Firewall rules and ensure that the host and client devices are on the same reachable network.
+
+**Security note:** The Flask development server is intended for local development and demonstration. Do not expose it directly to the public internet.
+
+---
+
+## 🐘 Apache Hadoop HDFS Integration
+
+AttendCloud includes a WebHDFS archival service in `app/services/hdfs_service.py`. The application's archival workflow has been tested with the local Hadoop HDFS environment, including successful report archival and verification of archived files in HDFS.
+
+### 1. Archival Workflow
+
+The archival process consists of these stages:
+
+1. Generate an attendance report in CSV format.
+2. Stage the report locally in the `exports/` directory.
+3. Use the custom cloud controller to request archival through WebHDFS.
+4. Transfer the report to the configured HDFS archive directory.
+5. Record the archival result in the SQLite `archive_logs` table.
+
+The application can retain locally staged reports when HDFS archival is unavailable, depending on the configured archival behavior.
+
+### 2. HDFS Configuration
+
+The following environment variables are examples for the local Windows-to-WSL Hadoop setup. Use the values supported by your current `config.py` and environment.
+
+```powershell
+$env:HDFS_ENABLED="True"
+$env:HDFS_NAMENODE_HOST="127.0.0.1"
+$env:HDFS_NAMENODE_PORT="9870"
+$env:HDFS_USER="ndaav"
+$env:HDFS_ARCHIVE_DIR="/attendcloud/archive"
+```
+
+These variables apply to the current PowerShell session. Set them before starting the application if your configuration relies on environment variables.
+
+### 3. Start the Hadoop Cluster
+
+In the Ubuntu/WSL terminal, start Hadoop's HDFS services:
+
+```bash
+start-dfs.sh
+```
+
+Check the Java processes:
+
+```bash
+jps
+```
+
+The running Hadoop services should include the relevant NameNode and DataNode processes.
+
+### 4. Verify the HDFS Archive
+
+List the archived reports:
+
+```bash
+hdfs dfs -ls /attendcloud/archive
+```
+
+To inspect a specific archived CSV file:
+
+```bash
+hdfs dfs -cat /attendcloud/archive/<filename>.csv
+```
+
+Replace `<filename>.csv` with an actual filename returned by the listing command.
+
+### 5. Troubleshooting
+
+**HDFS is unavailable**
+
+- Verify that the NameNode and DataNode are running.
+- Confirm the WebHDFS endpoint and port.
+- Check the HDFS archive directory and configuration.
+
+**HTTP 403 Forbidden**
+
+- Check the HDFS username and directory permissions.
+- Confirm that the configured user has the necessary write permissions.
+- Review the application logs and HDFS error message before changing permissions.
+
+**DataNode redirection issues**
+
+- In WSL or virtualized environments, the NameNode may redirect upload requests to a hostname that Windows cannot resolve.
+- Verify that the DataNode endpoint is reachable from the Windows host.
+- Check the hostname-resolution logic in `hdfs_service.py` if uploads fail.
+
+---
+
+## 🗄️ Database and Data Management
+
+AttendCloud uses SQLite for student records, attendance entries, and archival audit logs.
+
+The database is stored locally in:
+
+```text
+data/attendcloud.db
+```
+
+The application initializes its database according to its database setup logic. Generated report files are stored in the local `exports/` directory.
+
+The `.gitignore` file excludes the local database files, generated CSV exports, Python virtual environment, and cache files from being added as new Git-tracked files.
+
+Do not commit actual student records, private data, credentials, or other sensitive information to a public repository.
+
+---
+
+## 🔒 Security and Limitations
+
+- Use sample or anonymized student data in public demonstrations.
+- Do not publish passwords, API credentials, or private configuration.
+- Restrict access to the application to trusted devices on the LAN.
+- The project uses SQLite for its operational database; HDFS is used for report archival rather than as a replacement for SQLite.
+- The Flask development server is suitable for development and academic demonstration, not production deployment without additional security and deployment configuration.
+
+---
+
+## 🎯 Future Scope
+
+Potential future improvements include:
+
+- Role-based authentication and authorization.
+- Secure deployment using a production-ready WSGI server and HTTPS.
+- Automated scheduled archival and retention policies.
+- Enhanced dashboards and attendance trend visualizations.
+- Integration with institutional identity systems.
+- More detailed monitoring and audit reporting.
+
+These are potential extensions and should not be interpreted as features already implemented.
+
+---
+
+## 📚 References
+
+1. [Flask Documentation](https://flask.palletsprojects.com/)
+2. [Apache Hadoop Documentation](https://hadoop.apache.org/docs/)
+3. [Apache Hadoop HDFS Architecture](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html)
+4. [Python Documentation](https://docs.python.org/3/)
+5. [Git Documentation](https://git-scm.com/doc)
+
+---
+
+**Project:** AttendCloud — A LAN-Based SaaS Attendance Management System
+
+**Focus:** Cloud Computing, SaaS, LAN-based web applications, SQLite, and Apache Hadoop HDFS archival.
