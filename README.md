@@ -358,6 +358,14 @@ Potential future improvements include:
 These are potential extensions and should not be interpreted as features already implemented.
 
 ---
+## Screenshots
+
+### AttendCloud Dashboard
+
+The dashboard provides an overview of attendance activity and quick access to student management, attendance marking, reports, and cloud archival features.
+
+![AttendCloud Dashboard](screenshots/dashboard.png)
+
 
 ## 📚 References
 
